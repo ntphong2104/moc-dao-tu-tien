@@ -4,6 +4,7 @@ import logging
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
+from datetime import UTC, datetime, timedelta
 from app.database import async_session_factory
 from app.models.plant import Plant
 from app.services.exp_service import process_exp
@@ -17,12 +18,22 @@ async def calculate_exp_batch():
     logger.info("⏱️ Bắt đầu tiến trình cộng Tu Vi định kỳ...")
     async with async_session_factory() as db:
         try:
-            # Lấy tất cả các cây đang Active (có thiết bị đã paired)
-            stmt = select(Plant).options(selectinload(Plant.current_rank))
+            # Lấy tất cả các cây đang Active kèm rank và device
+            stmt = select(Plant).options(
+                selectinload(Plant.current_rank),
+                selectinload(Plant.device)
+            )
             result = await db.execute(stmt)
             plants = result.scalars().all()
 
+            # Ngưỡng offline là 15 phút không gửi dữ liệu
+            offline_threshold = datetime.now(UTC) - timedelta(minutes=15)
+
             for plant in plants:
+                # Bỏ qua nếu không có thiết bị hoặc thiết bị đã offline
+                if not plant.device or not plant.device.last_seen_at or plant.device.last_seen_at < offline_threshold:
+                    continue
+                    
                 # Tính điểm dựa trên current_overall_quality
                 await process_exp(db, plant, plant.current_overall_quality)
 
