@@ -90,10 +90,7 @@ def test_receive_telemetry_success(mock_process, valid_device_token):
 def test_receive_telemetry_invalid_token(mock_process):
     response = client.post(
         "/api/devices/TEST_PLANT/telemetry",
-        json={
-            "token": "invalid_token",
-            "sensors": [{"key": "light", "value": 100}]
-        },
+        json={"token": "invalid_token", "sensors": [{"key": "light", "value": 100}]},
     )
     assert response.status_code == 401
     assert not mock_process.called
@@ -104,10 +101,7 @@ def test_receive_telemetry_wrong_plant_token(mock_process):
     wrong_token = create_device_token("OTHER_PLANT")
     response = client.post(
         "/api/devices/TEST_PLANT/telemetry",
-        json={
-            "token": wrong_token,
-            "sensors": [{"key": "light", "value": 100}]
-        },
+        json={"token": wrong_token, "sensors": [{"key": "light", "value": 100}]},
     )
     assert response.status_code == 401
     assert not mock_process.called

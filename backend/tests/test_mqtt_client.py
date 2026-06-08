@@ -72,11 +72,12 @@ async def test_on_message_missing_token():
 
 @pytest.mark.asyncio
 async def test_on_message_invalid_token():
-    payload = json.dumps({
-        "token": "invalid_jwt_token",
-        "sensors": [{"key": "light", "value": 100}]
-    }).encode("utf-8")
-    with patch("app.mqtt.client.process_telemetry", new_callable=AsyncMock) as mock_process:
+    payload = json.dumps(
+        {"token": "invalid_jwt_token", "sensors": [{"key": "light", "value": 100}]}
+    ).encode("utf-8")
+    with patch(
+        "app.mqtt.client.process_telemetry", new_callable=AsyncMock
+    ) as mock_process:
         await on_message(None, "devices/TEST_PLANT/telemetry", payload, 0, None)
         assert not mock_process.called
 
@@ -84,11 +85,12 @@ async def test_on_message_invalid_token():
 @pytest.mark.asyncio
 async def test_on_message_wrong_plant_token():
     wrong_token = create_device_token("OTHER_PLANT")
-    payload = json.dumps({
-        "token": wrong_token,
-        "sensors": [{"key": "light", "value": 100}]
-    }).encode("utf-8")
-    with patch("app.mqtt.client.process_telemetry", new_callable=AsyncMock) as mock_process:
+    payload = json.dumps(
+        {"token": wrong_token, "sensors": [{"key": "light", "value": 100}]}
+    ).encode("utf-8")
+    with patch(
+        "app.mqtt.client.process_telemetry", new_callable=AsyncMock
+    ) as mock_process:
         await on_message(None, "devices/TEST_PLANT/telemetry", payload, 0, None)
         assert not mock_process.called
 
