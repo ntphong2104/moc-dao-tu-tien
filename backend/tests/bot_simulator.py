@@ -8,7 +8,6 @@ Chạy:
     uv run python tests/bot_simulator.py --code <PLANT_CODE>
 """
 
-
 import argparse
 import asyncio
 import json

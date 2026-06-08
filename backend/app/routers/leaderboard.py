@@ -9,16 +9,17 @@ from sqlalchemy.orm import selectinload
 
 from app.database import get_db
 from app.models.plant import Plant
+from app.schemas.leaderboard import LeaderboardResponse, LeaderboardEntry
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/leaderboard", tags=["Leaderboard"])
 
 
-@router.get("")
+@router.get("", response_model=LeaderboardResponse)
 async def get_leaderboard(
     limit: int = Query(20, ge=1, le=100, description="Số lượng kết quả (1-100)"),
     db: AsyncSession = Depends(get_db),
-) -> dict:
+) -> LeaderboardResponse:
     """Lấy bảng xếp hạng cây có Tu Vi cao nhất.
 
     Sắp xếp giảm dần theo total_exp.
@@ -44,21 +45,17 @@ async def get_leaderboard(
     entries = []
     for i, plant in enumerate(plants, 1):
         entries.append(
-            {
-                "rank": i,
-                "plant_name": plant.name,
-                "owner_display_name": plant.user.display_name
-                if plant.user
-                else "Unknown",
-                "total_exp": plant.total_exp,
-                "rank_name": plant.current_rank.name
-                if plant.current_rank
-                else "Phàm Mộc",
-                "plant_id": str(plant.id),
-            }
+            LeaderboardEntry(
+                rank=i,
+                plant_name=plant.name,
+                owner_display_name=plant.user.display_name if plant.user else "Unknown",
+                total_exp=plant.total_exp,
+                rank_name=plant.current_rank.name if plant.current_rank else "Phàm Mộc",
+                plant_id=plant.id,
+            )
         )
 
-    return {
-        "entries": entries,
-        "total_count": total_count,
-    }
+    return LeaderboardResponse(
+        entries=entries,
+        total_count=total_count,
+    )

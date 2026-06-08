@@ -53,3 +53,47 @@ uv run pytest --cov=app tests/
 - Xử lý Telemetry Data từ thiết bị IoT.
 - Tính toán Tu Vi (EXP) theo logic đã được định nghĩa.
 - Hệ thống Admin quản trị.
+
+---
+
+## 🔐 Hướng Dẫn Tích Hợp Đăng Nhập Google (Dành Cho Frontend)
+
+Backend của Mộc Đạo Tu Tiên cung cấp luồng đăng nhập qua Google OAuth2. Frontend **không cần** chuyển hướng trang web mà sử dụng trực tiếp Popup của Google Identity SDK.
+
+### 1. Cài đặt & Cấu hình FE
+- Cài đặt thư viện: `npm install @react-oauth/google`
+- Đặt `GOOGLE_CLIENT_ID` vào `.env` của Frontend (lấy Client ID từ Backend).
+
+### 2. Code Tích Hợp (React)
+```javascript
+import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
+import axios from 'axios';
+
+function App() {
+  const handleLoginSuccess = async (credentialResponse) => {
+    // Gửi ID Token từ Google xuống API của Backend
+    const response = await axios.post('http://localhost:8000/api/auth/google', {
+      id_token: credentialResponse.credential
+    });
+    
+    // Lưu Access Token nội bộ
+    localStorage.setItem('access_token', response.data.access_token);
+  };
+
+  return (
+    <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
+      <GoogleLogin onSuccess={handleLoginSuccess} />
+    </GoogleOAuthProvider>
+  );
+}
+```
+
+### 3. Gọi các API khác sau khi đăng nhập
+Frontend cần đính kèm JWT Token vào Header của mọi request:
+```javascript
+axios.get('http://localhost:8000/api/auth/me', {
+  headers: { Authorization: `Bearer ${localStorage.getItem('access_token')}` }
+});
+```
+
+*Lưu ý: Nếu gặp lỗi 400 (redirect_uri_mismatch) khi đang chạy localhost, hãy báo Backend thêm địa chỉ localhost của Frontend vào danh sách "Authorized JavaScript origins" trên Google Cloud Console.*

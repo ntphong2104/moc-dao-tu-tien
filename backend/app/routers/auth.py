@@ -3,8 +3,10 @@
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.config import settings
 from app.database import get_db
 from app.dependencies import get_current_user
 from app.models.user import User
@@ -104,6 +106,52 @@ async def get_me(
         display_name=user.display_name,
         avatar_url=user.avatar_url,
         role=user.role,
-        has_plant=user.plant is not None,
+        has_plant=len(user.plants) > 0,
         created_at=user.created_at,
     )
+
+
+@router.post("/swagger-login", include_in_schema=False)
+async def swagger_login(
+    form_data: OAuth2PasswordRequestForm = Depends(),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Endpoint ẩn dành riêng cho Swagger UI đăng nhập nhanh.
+    - Username: nhập email
+    - Password: 'admin' để được cấp quyền admin, nhập tùy ý để làm user thường.
+    """
+    email = form_data.username
+    if settings.app_env != "development":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Endpoint này chỉ khả dụng trong môi trường Development",
+        )
+
+    if "@" not in email:
+        email = f"{email}@moctu.com"
+
+    role = "admin" if form_data.password == "admin" else "user"
+
+    from sqlalchemy import select
+
+    stmt = select(User).where(User.email == email)
+    res = await db.execute(stmt)
+    user = res.scalar_one_or_none()
+
+    if not user:
+        user = User(
+            email=email,
+            google_id=f"dev-{email}",
+            display_name=email.split("@")[0],
+            role=role,
+        )
+        db.add(user)
+        await db.commit()
+        await db.refresh(user)
+    elif user.role != role:
+        user.role = role
+        await db.commit()
+
+    access_token = create_access_token(user.id, user.role)
+    return {"access_token": access_token, "token_type": "bearer"}

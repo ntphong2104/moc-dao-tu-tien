@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "moc-dao-tu-tien-sqa-test",
     "name": "Mộc Đạo Tu Tiên — SQA Test Collection",
-    "description": "Bộ kịch bản kiểm thử API cho dự án IoT Gamification 'Mộc Đạo Tu Tiên'.\n\nÁnh xạ 1:1 với các Test Case trong báo cáo SQA cuối kỳ.\n\nHướng dẫn:\n1. Import file này vào Postman.\n2. Đặt biến `base_url` = http://localhost:8000\n3. Chạy lần lượt từ trên xuống hoặc dùng Collection Runner.",
+    "description": "Bộ kịch bản kiểm thử API cho dự án IoT Gamification 'Mộc Đạo Tu Tiên' (v2 - Delta Sync & Multi-plant).\n\nÁnh xạ 1:1 với các Test Case trong báo cáo SQA cuối kỳ.\n\nHướng dẫn:\n1. Import file này vào Postman.\n2. Đặt biến `base_url` = http://localhost:8000\n3. Chạy lần lượt từ trên xuống hoặc dùng Collection Runner.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -38,8 +38,12 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/health",
-              "host": ["{{base_url}}"],
-              "path": ["health"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "health"
+              ]
             },
             "description": "Kiểm tra server đang chạy. Expected: HTTP 200."
           },
@@ -63,12 +67,58 @@
       "name": "1. UC-01: Liên kết Chậu cây (Pairing)",
       "item": [
         {
+          "name": "TC-01.0: Tự cấp mã nạp mạch (DIY Provisioning)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/plants/diy-provision",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "plants",
+                "diy-provision"
+              ]
+            },
+            "description": "Tự cấp mã (DIY). Expected: 200, trả về plant_code và verify_code."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('DIY Provisioning — HTTP 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set('plant_code', jsonData.data.plant_code);",
+                  "    pm.collectionVariables.set('verify_code', jsonData.data.verify_code);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
           "name": "TC-01.1: Happy Path — Liên kết thành công",
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{jwt_token}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -76,8 +126,14 @@
             },
             "url": {
               "raw": "{{base_url}}/api/plants/pair",
-              "host": ["{{base_url}}"],
-              "path": ["api", "plants", "pair"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "plants",
+                "pair"
+              ]
             },
             "description": "TC-01.1: Gửi đúng Plant Code + Verify Code + User hợp lệ.\nExpected: HTTP 201, tạo record trong bảng plants."
           },
@@ -104,8 +160,14 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{jwt_token}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -113,8 +175,14 @@
             },
             "url": {
               "raw": "{{base_url}}/api/plants/pair",
-              "host": ["{{base_url}}"],
-              "path": ["api", "plants", "pair"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "plants",
+                "pair"
+              ]
             },
             "description": "TC-01.2: Plant Code không tồn tại trong DB.\nExpected: HTTP 400/404, thông báo lỗi 'Mã không hợp lệ'."
           },
@@ -137,8 +205,14 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{jwt_token}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -146,8 +220,14 @@
             },
             "url": {
               "raw": "{{base_url}}/api/plants/pair",
-              "host": ["{{base_url}}"],
-              "path": ["api", "plants", "pair"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "plants",
+                "pair"
+              ]
             },
             "description": "TC-01.3: Plant Code đúng nhưng Verify Code sai.\nExpected: HTTP 400, 'Mã xác thực không đúng'."
           },
@@ -170,8 +250,14 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{jwt_token}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -179,8 +265,14 @@
             },
             "url": {
               "raw": "{{base_url}}/api/plants/pair",
-              "host": ["{{base_url}}"],
-              "path": ["api", "plants", "pair"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "plants",
+                "pair"
+              ]
             },
             "description": "TC-01.4: Thiết bị đã được liên kết bởi User khác.\nExpected: HTTP 400, 'Thiết bị đã được liên kết'.\nLưu ý: Trước BUG-001 fix, endpoint trả HTTP 500."
           },
@@ -191,6 +283,51 @@
                 "exec": [
                   "pm.test('TC-01.4: Thiết bị trùng — HTTP 400 (sau fix BUG-001)', function () {",
                   "    pm.response.to.have.status(400);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "TC-01.5: Liên kết chậu thứ 2 (Multi-plant)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"plant_code\": \"{{plant_code_2}}\",\n  \"verify_code\": \"{{verify_code_2}}\",\n  \"plant_name\": \"Cây thứ 2\",\n  \"plant_type_id\": \"uuid-of-kim-tien\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/plants/pair",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "plants",
+                "pair"
+              ]
+            },
+            "description": "Liên kết cây thứ 2. Expected: HTTP 201."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('TC-01.5: Đa chậu thành công — HTTP 201', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
                   "});"
                 ],
                 "type": "text/javascript"
@@ -208,12 +345,22 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{jwt_token}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
             ],
             "url": {
               "raw": "{{base_url}}/api/plants/me/dashboard",
-              "host": ["{{base_url}}"],
-              "path": ["api", "plants", "me", "dashboard"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "plants",
+                "me",
+                "dashboard"
+              ]
             },
             "description": "TC-02.1: Lấy dữ liệu Dashboard: 4 chỉ số cảm biến, Tu Vi, Cảnh Giới.\nExpected: HTTP 200, response chứa total_exp và rank."
           },
@@ -245,15 +392,31 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{jwt_token}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
             ],
             "url": {
               "raw": "{{base_url}}/api/plants/me/history?sensor_key=soil_moisture&hours=24",
-              "host": ["{{base_url}}"],
-              "path": ["api", "plants", "me", "history"],
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "plants",
+                "me",
+                "history"
+              ],
               "query": [
-                { "key": "sensor_key", "value": "soil_moisture" },
-                { "key": "hours", "value": "24" }
+                {
+                  "key": "sensor_key",
+                  "value": "soil_moisture"
+                },
+                {
+                  "key": "hours",
+                  "value": "24"
+                }
               ]
             },
             "description": "TC-03.1: Lấy lịch sử cảm biến độ ẩm 24h để vẽ Line chart.\nExpected: HTTP 200, response chứa mảng datapoints."
@@ -284,10 +447,18 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/api/leaderboard?limit=10",
-              "host": ["{{base_url}}"],
-              "path": ["api", "leaderboard"],
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "leaderboard"
+              ],
               "query": [
-                { "key": "limit", "value": "10" }
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
               ]
             },
             "description": "TC-04.1: Lấy bảng xếp hạng Top 10.\nExpected: HTTP 200, response chứa mảng items sắp xếp giảm dần theo total_exp."
@@ -314,50 +485,21 @@
       ]
     },
     {
-      "name": "5. Anti-spam & Telemetry",
+      "name": "5. Telemetry v2 (Delta Sync)",
       "item": [
         {
-          "name": "TC-05.1: Anti-spam — Gửi trong 55s (Bị chặn)",
+          "name": "TC-05.1: Gửi Telemetry (Không cộng EXP trực tiếp)",
           "request": {
             "method": "POST",
             "header": [
-              { "key": "X-Plant-Code", "value": "{{plant_code}}" },
-              { "key": "Content-Type", "value": "application/json" }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"soil_moisture\": 35.0,\n  \"light\": 500,\n  \"temperature\": 28.5,\n  \"humidity\": 65.0\n}"
-            },
-            "url": {
-              "raw": "{{base_url}}/api/devices/{{plant_code}}/telemetry",
-              "host": ["{{base_url}}"],
-              "path": ["api", "devices", "{{plant_code}}", "telemetry"]
-            },
-            "description": "TC-05.1: Gửi Telemetry request thứ 2 trong vòng 55 giây sau request trước.\nExpected: HTTP 200 nhưng exp_added = 0 (bị Anti-spam chặn)."
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('TC-05.1: Anti-spam — HTTP 200 nhưng exp = 0', function () {",
-                  "    pm.response.to.have.status(200);",
-                  "    var jsonData = pm.response.json();",
-                  "    pm.expect(jsonData.exp_added).to.eql(0);",
-                  "});"
-                ],
-                "type": "text/javascript"
+              {
+                "key": "X-Plant-Code",
+                "value": "{{plant_code}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
               }
-            }
-          ]
-        },
-        {
-          "name": "TC-05.2: Anti-spam — Gửi sau 56s (Được tính điểm)",
-          "request": {
-            "method": "POST",
-            "header": [
-              { "key": "X-Plant-Code", "value": "{{plant_code}}" },
-              { "key": "Content-Type", "value": "application/json" }
             ],
             "body": {
               "mode": "raw",
@@ -365,20 +507,27 @@
             },
             "url": {
               "raw": "{{base_url}}/api/devices/{{plant_code}}/telemetry",
-              "host": ["{{base_url}}"],
-              "path": ["api", "devices", "{{plant_code}}", "telemetry"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "devices",
+                "{{plant_code}}",
+                "telemetry"
+              ]
             },
-            "description": "TC-05.2: Gửi Telemetry sau khi đã chờ > 55 giây.\nExpected: HTTP 200 và exp_added > 0 (được tính điểm hợp lệ).\nLưu ý: Cần chờ ít nhất 56 giây sau TC-05.1 mới chạy TC này."
+            "description": "TC-05.1: Gửi Telemetry.\nExpected: HTTP 200, lưu lại trạng thái mới nhất. Không trả về exp_added."
           },
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('TC-05.2: Ngoài cửa sổ — exp_added > 0', function () {",
+                  "pm.test('TC-05.1: Telemetry v2 — HTTP 200', function () {",
                   "    pm.response.to.have.status(200);",
                   "    var jsonData = pm.response.json();",
-                  "    pm.expect(jsonData.exp_added).to.be.above(0);",
+                  "    pm.expect(jsonData.status).to.eql('ok');",
                   "});"
                 ],
                 "type": "text/javascript"
@@ -396,12 +545,22 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{jwt_token}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
             ],
             "url": {
               "raw": "{{base_url}}/api/plants/me/dashboard",
-              "host": ["{{base_url}}"],
-              "path": ["api", "plants", "me", "dashboard"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "plants",
+                "me",
+                "dashboard"
+              ]
             },
             "description": "TC-06.1: Dùng JWT của User A để truy cập resource.\nAPI /plants/me đảm bảo chỉ trả dữ liệu của chính user đang đăng nhập.\nExpected: HTTP 200 nhưng chỉ trả dữ liệu của owner, không lộ data người khác."
           },
@@ -426,8 +585,15 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/api/plants/me/dashboard",
-              "host": ["{{base_url}}"],
-              "path": ["api", "plants", "me", "dashboard"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "plants",
+                "me",
+                "dashboard"
+              ]
             },
             "description": "TC-SEC.1: Gọi API bảo mật mà KHÔNG có Authorization header.\nExpected: HTTP 401 Unauthorized."
           },
@@ -450,12 +616,22 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Authorization", "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.INVALID.TOKEN" }
+              {
+                "key": "Authorization",
+                "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.INVALID.TOKEN"
+              }
             ],
             "url": {
               "raw": "{{base_url}}/api/plants/me/dashboard",
-              "host": ["{{base_url}}"],
-              "path": ["api", "plants", "me", "dashboard"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "plants",
+                "me",
+                "dashboard"
+              ]
             },
             "description": "TC-SEC.2: Gửi JWT token giả mạo / đã hết hạn.\nExpected: HTTP 401 Unauthorized."
           },
@@ -478,12 +654,21 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{jwt_token}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
             ],
             "url": {
               "raw": "{{base_url}}/api/admin/dashboard",
-              "host": ["{{base_url}}"],
-              "path": ["api", "admin", "dashboard"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "dashboard"
+              ]
             },
             "description": "TC-SEC.3: User thường (không phải Admin) cố truy cập API Admin.\nExpected: HTTP 403 Forbidden."
           },
@@ -513,8 +698,12 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/health",
-              "host": ["{{base_url}}"],
-              "path": ["health"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "health"
+              ]
             },
             "description": "TC-SQA.1: Chạy lệnh 'uv run ruff check .' trên Terminal.\nExpected: Exit code 0, không có cảnh báo.\nLưu ý: Test này chạy ngoài Postman, request này chỉ là placeholder."
           }

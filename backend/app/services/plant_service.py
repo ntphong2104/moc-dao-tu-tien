@@ -47,13 +47,8 @@ async def pair_plant(
     Raises:
         ValueError: Khi xác thực thất bại hoặc vi phạm ràng buộc.
     """
-    # 1. Kiểm tra user chưa có cây
-    stmt = select(Plant).where(Plant.user_id == user.id)
-    result = await db.execute(stmt)
-    if result.scalar_one_or_none() is not None:
-        raise ValueError(
-            "Tài khoản đã liên kết chậu cây. Mỗi tài khoản chỉ được 1 cây."
-        )
+    # 1. Bỏ giới hạn 1 user - 1 cây để hỗ trợ Đa chậu
+    # stmt = select(Plant).where(Plant.user_id == user.id)
 
     # 2. Tìm device
     stmt = select(Device).where(Device.plant_code == plant_code)

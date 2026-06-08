@@ -41,6 +41,6 @@ class User(Base):
     )
 
     # Relationships
-    plant: Mapped["Plant | None"] = relationship(  # noqa: F821
-        "Plant", back_populates="user", uselist=False
+    plants: Mapped[list["Plant"]] = relationship(  # noqa: F821
+        "Plant", back_populates="user", uselist=True
     )

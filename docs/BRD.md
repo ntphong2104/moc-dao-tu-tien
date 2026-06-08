@@ -42,7 +42,8 @@ Xây dựng một hệ thống IoT kết hợp Gamification, biến việc chăm
 
 
 ### 3.5. Hồ sơ cây & Liên kết chậu cây
-- Người dùng liên kết chậu cây với tài khoản qua **Plant Code** (in trên thiết bị).
+- Người dùng liên kết chậu cây với tài khoản qua **Plant Code** (in trên thiết bị) hoặc tự động sinh mã qua **Tự cấp mã nạp mạch (DIY Provisioning)**.
+- **Hỗ trợ Đa chậu (Multi-plant):** Một người dùng có thể liên kết và quản lý đồng thời nhiều chậu cây.
 - Sau khi liên kết, người dùng đặt tên cho cây và chọn loại cây.
 - Người dùng có thể thay đổi thông tin cây (tên, loại cây) sau khi liên kết.
 - Mỗi tài khoản quản lý **1 chậu cây**.
@@ -92,7 +93,7 @@ Xây dựng một hệ thống IoT kết hợp Gamification, biến việc chăm
 - Dashboard hiển thị đầy đủ: chỉ số, đánh giá, Tu Vi, Cảnh Giới, tiến trình, và biểu đồ xu hướng.
 - Người dùng đăng nhập Google, liên kết chậu cây, đặt tên và chọn loại cây thành công.
 - Người dùng có thể thay đổi thông tin cây sau khi liên kết.
-- Bảng xếp hạng hiển thị đúng thứ tự Tu Vi giữa các người dùng.
+- Bảng xếp hạng hiển thị đúng thứ tự Tu Vi của các chậu cây.
 
 ### Admin / Nhà vận hành
 - Admin Dashboard hiển thị đúng số liệu tổng quan (người dùng, thiết bị, cây).

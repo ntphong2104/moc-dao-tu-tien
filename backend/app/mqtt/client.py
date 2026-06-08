@@ -13,6 +13,7 @@ from gmqtt.mqtt.constants import MQTTv311
 from app.config import settings
 from app.database import async_session_factory
 from app.schemas.telemetry import SensorData
+from app.services.auth_service import decode_token
 from app.services.telemetry_service import process_telemetry
 
 logger = logging.getLogger(__name__)
@@ -53,6 +54,23 @@ async def on_message(client, topic: str, payload: bytes, qos, properties):
 
         # Parse payload
         data = json.loads(payload.decode("utf-8"))
+        # Kiểm tra token
+        token = data.get("token")
+        if not token:
+            logger.warning("MQTT payload thiếu token: %s", topic)
+            return
+
+        try:
+            token_data = decode_token(token)
+            if (
+                token_data.get("type") != "device"
+                or token_data.get("sub") != plant_code
+            ):
+                raise ValueError("Token không thuộc về thiết bị này")
+        except ValueError as e:
+            logger.warning("Lỗi xác thực Telemetry (MQTT) cho %s: %s", plant_code, e)
+            return
+
         sensors = [SensorData(**s) for s in data.get("sensors", [])]
 
         if not sensors:

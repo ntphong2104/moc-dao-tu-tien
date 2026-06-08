@@ -3,7 +3,8 @@
 import logging
 from uuid import UUID
 
-from fastapi import Depends, Header, HTTPException, status
+from fastapi import Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
@@ -13,23 +14,17 @@ from app.services.auth_service import decode_token, get_user_by_id
 logger = logging.getLogger(__name__)
 
 
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/swagger-login")
+
+
 async def get_current_user(
-    authorization: str = Header(..., description="Bearer <JWT token>"),
+    token: str = Depends(oauth2_scheme),
     db: AsyncSession = Depends(get_db),
 ) -> User:
     """Dependency: Xác thực JWT và trả về User hiện tại.
 
-    Header: Authorization: Bearer <access_token>
+    Sử dụng OAuth2PasswordBearer để có form đăng nhập trực tiếp trên Swagger UI.
     """
-    # Parse Bearer token
-    parts = authorization.split(" ")
-    if len(parts) != 2 or parts[0].lower() != "bearer":
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authorization header phải có dạng: Bearer <token>",
-        )
-
-    token = parts[1]
 
     try:
         payload = decode_token(token)

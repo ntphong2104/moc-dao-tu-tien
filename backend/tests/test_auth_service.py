@@ -4,6 +4,7 @@ from datetime import UTC, datetime, timedelta
 from jose import jwt
 from typing import cast
 from sqlalchemy.ext.asyncio import AsyncSession
+from unittest.mock import patch, MagicMock, AsyncMock
 
 from app.config import settings
 from app.models.user import User
@@ -12,6 +13,8 @@ from app.services.auth_service import (
     create_refresh_token,
     decode_token,
     get_or_create_user,
+    get_user_by_id,
+    verify_google_token,
 )
 
 
@@ -160,3 +163,76 @@ async def test_get_or_create_user_existing(mock_google_info):
     # trạng thái thay đổi của đối tượng (dirty state tracking) thông qua Unit of Work
     # và sẽ tự động sinh lệnh UPDATE khi commit/flush.
     assert len(db.added) == 0
+
+
+@pytest.mark.asyncio
+async def test_get_user_by_id():
+    db = AsyncMock()
+    user = User(id=uuid4(), email="test@moctu.com")
+
+    # Just mock execute
+    mock_result = MagicMock()
+    mock_result.scalar_one_or_none.return_value = user
+    db.execute.return_value = mock_result
+
+    res = await get_user_by_id(cast(AsyncSession, db), user.id)
+    assert res is not None
+    assert res.email == "test@moctu.com"
+
+
+@pytest.mark.asyncio
+async def test_verify_google_token_success():
+    with patch("httpx.AsyncClient.get") as mock_get:
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {
+            "sub": "123",
+            "email": "test@google.com",
+            "name": "Test",
+        }
+        mock_get.return_value = mock_response
+
+        from app.config import settings
+
+        old_aud = settings.google_client_id
+        settings.google_client_id = ""  # Disable audience check
+
+        res = await verify_google_token("valid_token")
+        assert res["email"] == "test@google.com"
+
+        settings.google_client_id = old_aud
+
+
+@pytest.mark.asyncio
+async def test_verify_google_token_invalid():
+    with patch("httpx.AsyncClient.get") as mock_get:
+        mock_response = MagicMock()
+        mock_response.status_code = 400
+        mock_get.return_value = mock_response
+
+        with pytest.raises(ValueError, match="Google ID token không hợp lệ"):
+            await verify_google_token("invalid_token")
+
+
+@pytest.mark.asyncio
+async def test_verify_google_token_wrong_aud():
+    with patch("httpx.AsyncClient.get") as mock_get:
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {
+            "sub": "123",
+            "email": "test@google.com",
+            "name": "Test",
+            "aud": "wrong_aud",
+        }
+        mock_get.return_value = mock_response
+
+        from app.config import settings
+
+        old_aud = settings.google_client_id
+        settings.google_client_id = "correct_aud"
+
+        with pytest.raises(ValueError, match="Token audience không khớp"):
+            await verify_google_token("valid_token")
+
+        settings.google_client_id = old_aud

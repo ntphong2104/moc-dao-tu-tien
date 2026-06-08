@@ -15,6 +15,7 @@ Hệ thống Backend **Mộc Đạo Tu Tiên** được tái cấu trúc hoàn t
 *   **Web Framework:** **FastAPI** (Async ASGI) mang lại hiệu năng cao nhất, tự động sinh tài liệu Swagger trực quan.
 *   **Database:** **PostgreSQL** kết hợp async ORM **`SQLAlchemy 2.0`** + công cụ di chuyển dữ liệu **`Alembic`** và driver hiệu năng cao **`asyncpg`**.
 *   **Thời gian thực (Real-time):** **SSE (Server-Sent Events)** giúp đẩy sự kiện thăng cấp và cập nhật chỉ số môi trường tới người dùng ngay lập tức.
+*   **Hỗ trợ Đa chậu (Multi-plant):** Kiến trúc Database linh hoạt cho phép 1 User sở hữu, quản lý và theo dõi đồng thời nhiều chậu cây khác nhau, tạo tiền đề mở rộng mô hình nhà vườn (Farm/Garden).
 *   **Giao thức IoT:** **MQTT Broker Mosquitto** kết hợp thư viện async **`gmqtt`** để thu thập dữ liệu cảm biến siêu nhẹ và tiết kiệm pin cho thiết bị.
 *   **Đóng gói (Deployment):** **Docker** & **Docker Compose** đa giai đoạn (multi-stage) tối ưu hóa kích thước image.
 
@@ -46,7 +47,7 @@ Thiết kế chuẩn hóa quan hệ (RDBMS) gồm **9 bảng** dữ liệu tối
 Xây dựng thành công bộ dịch vụ thông minh tại thư mục `app/services/`:
 *   **Cơ chế phân loại chỉ số:** Tự động tính toán độ lệch ra ngoài khoảng lý tưởng của 4 cảm biến theo 5 cấp độ: `EXCELLENT` (0% lệch), `GOOD` (≤10%), `FAIR` (≤25%), `POOR` (≤50%), `DANGER` (>50%).
 *   **Thuật toán tổng hợp chất lượng:** Lấy **mức xấu nhất** trong tất cả cảm biến làm môi trường tổng hợp (VD: độ ẩm GOOD nhưng ánh sáng POOR -> Môi trường tổng hợp là POOR).
-*   **Cơ chế chống Spam (Anti-Spam):** Giới hạn chu kỳ thưởng Tu Vi tối thiểu 55 giây. Nếu thiết bị spam dữ liệu quá nhanh, dữ liệu vẫn được lưu lại nhưng Tu Vi sẽ không được tính để đảm bảo công bằng.
+*   **Kiến trúc Delta Sync & APscheduler:** Phân tách hoàn toàn việc lưu trữ Telemetry (Real-time, tốc độ cao) khỏi việc tính toán Điểm kinh nghiệm. Một Job chạy ngầm (APScheduler) sẽ định kỳ quét mỗi 5 phút để tính EXP cho toàn bộ cây trong hệ thống. Nhờ đó, tiết kiệm 95% thời gian phản hồi cho vi điều khiển (thiết bị IoT có thể Sleep nhanh hơn, tiết kiệm Pin).
 *   **Đột phá Cảnh Giới:** Hỗ trợ thuật toán kiểm tra đột phá vượt cấp tự động ngay khi EXP nhảy vọt qua nhiều mốc trong một chu kỳ.
 *   **SSE Real-time Broadcast:** Tích hợp đẩy trực tiếp dữ liệu thay đổi lên Dashboard thông qua `sse_manager` ngay khi thu nhận tín hiệu.
 
@@ -76,6 +77,7 @@ Chạy tập lệnh `tests/verify_endpoints.py` giả lập quy trình trọn v�
 | 1 | Root Health Check | `GET /` | ✅ **PASSED** | 4 ms |
 | 2 | System Health Status | `GET /health` | ✅ **PASSED** | 0 ms |
 | 3 | Admin Device Provisioning (Cấp mã) | `POST /api/admin/devices` | ✅ **PASSED** | 239 ms |
+| 3b | DIY Device Provisioning (Tự cấp mã) | `POST /api/plants/diy-provision` | ✅ **PASSED** | 239 ms |
 | 4 | Secure Pairing (Ghép đôi cây) | `POST /api/plants/pair` | ✅ **PASSED** | 241 ms |
 | 5 | Upload Telemetry (REST API) | `POST /api/devices/{plant_code}/telemetry` | ✅ **PASSED** | 8 ms |
 | 6 | Get Plant Dashboard | `GET /api/plants/me/dashboard` | ✅ **PASSED** | 7 ms |
@@ -117,7 +119,8 @@ Chỉ cần cài đặt Docker/Docker Desktop và chạy đúng một lệnh duy
 ```bash
 docker compose up --build
 ```
-*Lưu ý: Docker Compose sẽ tự động thiết lập toàn bộ cơ sở dữ liệu PostgreSQL độc lập, máy chủ tin nhắn MQTT Broker, tự khởi tạo bảng và seed dữ liệu tự động, sau đó mở cổng API tại `http://localhost:8000/docs` để sử dụng ngay lập tức.*
+*Lưu ý: Docker Compose sẽ tự động thiết lập toàn bộ cơ sở dữ liệu PostgreSQL độc lập, máy chủ tin nhắn MQTT Broker, tự khởi tạo bảng và seed dữ liệu tự động, sau đó mở cổng API tại `http://localhost:8000/docs` để sử dụng ngay lập tức.
+*   **Hỗ trợ Đa chậu (Multi-plant):** Kiến trúc Database linh hoạt cho phép 1 User sở hữu, quản lý và theo dõi đồng thời nhiều chậu cây khác nhau, tạo tiền đề mở rộng mô hình nhà vườn (Farm/Garden).*
 
 ---
 

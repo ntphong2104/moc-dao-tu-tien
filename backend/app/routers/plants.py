@@ -8,7 +8,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.dependencies import get_current_user
 from app.models.user import User
+from app.schemas.admin import PlantTypeResponse
 from app.schemas.plant import PlantPairRequest, PlantUpdateRequest
+from app.services.admin_service import get_plant_types, provision_device
 from app.services.plant_service import (
     get_dashboard,
     get_plant_history,
@@ -18,6 +20,36 @@ from app.services.plant_service import (
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/plants", tags=["Plants"])
+
+
+@router.post("/diy-provision")
+async def diy_provision_endpoint(
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> dict:
+    """Tự cấp mã nạp mạch (Dành cho User tự cấu hình mạch ESP32)."""
+    try:
+        device_info = await provision_device(db)
+        return {
+            "status": "success",
+            "message": "Đã tạo mã liên kết thiết bị thành công. Hãy nạp Plant Code vào ESP32.",
+            "data": device_info,
+        }
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        ) from e
+
+
+@router.get("/types", response_model=list[PlantTypeResponse])
+async def get_all_plant_types(
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> list[PlantTypeResponse]:
+    """Lấy danh sách tất cả loại cây để hiển thị trên FE (select box)."""
+    types = await get_plant_types(db)
+    return [PlantTypeResponse.model_validate(t) for t in types]
 
 
 @router.post("/pair")

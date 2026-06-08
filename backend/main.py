@@ -14,6 +14,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
 from app.mqtt.client import start_mqtt, stop_mqtt
+from app.scheduler import start_scheduler, stop_scheduler
 from app.routers import admin, auth, devices, leaderboard, plants, sse
 
 # Cấu hình logging
@@ -36,12 +37,18 @@ async def lifespan(app: FastAPI):
     except Exception:
         logger.exception("MQTT khởi tạo thất bại, tiếp tục chạy không MQTT")
 
+    try:
+        start_scheduler()
+    except Exception:
+        logger.exception("Scheduler khởi tạo thất bại")
+
     logger.info("✅ Backend sẵn sàng phục vụ!")
 
     yield
 
     # --- Shutdown ---
     logger.info("🛑 Đang tắt Backend...")
+    stop_scheduler()
     await stop_mqtt()
     logger.info("👋 Backend đã tắt hoàn toàn")
 

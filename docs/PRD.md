@@ -73,7 +73,10 @@
 
 ---
 
-### F-02: Liên kết chậu cây (Secure Pairing)
+### F-01b: Tự cấp mã nạp mạch (DIY Provisioning)
+- Cho phép người dùng hệ DIY tự động tạo ra một `plant_code` và `verify_code` hoàn toàn mới để nạp vào mạch ESP32 tự chế của họ.
+
+### F-02: Liên kết chậu cây (Secure Pairing & Multi-plant)
 
 | Mục | Nội dung |
 |---|---|
@@ -85,6 +88,7 @@
 
 **User Stories:**
 - Là người dùng, tôi muốn nhập cả Plant Code và Verify Code để đảm bảo chỉ mình tôi mới có quyền liên kết chậu cây của mình.
+- Là người dùng, tôi muốn liên kết thêm nhiều chậu cây thứ 2, thứ 3 vào cùng một tài khoản để tiện quản lý (Multi-plant).
 - Là người dùng, tôi muốn được thông báo lỗi nếu nhập sai một trong hai mã.
 - Là nhà phát triển, tôi muốn ngăn chặn các cuộc tấn công Brute-force vào Plant Code.
 

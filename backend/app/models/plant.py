@@ -32,7 +32,7 @@ class Plant(Base):
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
     user_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("users.id"), unique=True, nullable=False
+        UUID(as_uuid=True), ForeignKey("users.id"), nullable=False
     )
     device_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("devices.id"), unique=True, nullable=False
@@ -45,6 +45,9 @@ class Plant(Base):
     current_rank_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("rank_configs.id"), nullable=False
     )
+    current_overall_quality: Mapped[str] = mapped_column(
+        String(50), default="FAIR", nullable=False
+    )
     last_exp_reward_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
@@ -56,7 +59,7 @@ class Plant(Base):
     )
 
     # Relationships
-    user: Mapped["User"] = relationship("User", back_populates="plant")  # noqa: F821
+    user: Mapped["User"] = relationship("User", back_populates="plants")  # noqa: F821
     device: Mapped["Device"] = relationship(  # noqa: F821
         "Device", back_populates="plant"
     )
