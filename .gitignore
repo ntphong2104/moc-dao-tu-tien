@@ -47,3 +47,7 @@ __pycache__/
 # OS files
 .DS_Store
 Thumbs.db
+
+# Private AI Rules (Local only)
+AGENTS.md
+SESSION_LOG.md

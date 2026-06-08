@@ -20,8 +20,7 @@ async def calculate_exp_batch():
         try:
             # Lấy tất cả các cây đang Active kèm rank và device
             stmt = select(Plant).options(
-                selectinload(Plant.current_rank),
-                selectinload(Plant.device)
+                selectinload(Plant.current_rank), selectinload(Plant.device)
             )
             result = await db.execute(stmt)
             plants = result.scalars().all()
@@ -31,9 +30,13 @@ async def calculate_exp_batch():
 
             for plant in plants:
                 # Bỏ qua nếu không có thiết bị hoặc thiết bị đã offline
-                if not plant.device or not plant.device.last_seen_at or plant.device.last_seen_at < offline_threshold:
+                if (
+                    not plant.device
+                    or not plant.device.last_seen_at
+                    or plant.device.last_seen_at < offline_threshold
+                ):
                     continue
-                    
+
                 # Tính điểm dựa trên current_overall_quality
                 await process_exp(db, plant, plant.current_overall_quality)
 
