@@ -104,6 +104,22 @@ def create_refresh_token(user_id: UUID) -> str:
     )
 
 
+def create_device_token(plant_code: str) -> str:
+    """Tạo JWT access token dành riêng cho thiết bị phần cứng.
+
+    Hạn sử dụng: 10 năm (chuẩn cho thiết bị IoT ít cập nhật).
+    """
+    expire = datetime.now(UTC) + timedelta(days=3650)
+    payload = {
+        "sub": plant_code,
+        "type": "device",
+        "exp": expire,
+    }
+    return jwt.encode(
+        payload, settings.jwt_secret_key, algorithm=settings.jwt_algorithm
+    )
+
+
 def decode_token(token: str) -> dict:
     """Giải mã và xác thực JWT token.
 

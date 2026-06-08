@@ -28,6 +28,34 @@ class DeviceListItem(BaseModel):
     created_at: datetime
 
 
+class DeviceResponse(BaseModel):
+    """Thông tin thiết bị trả về."""
+
+    id: uuid.UUID
+    plant_code: str
+    is_paired: bool
+    is_active: bool
+    last_seen_at: datetime | None = None
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class DeviceAuthRequest(BaseModel):
+    """Request xác thực thiết bị."""
+
+    verify_code: str
+
+
+class DeviceAuthResponse(BaseModel):
+    """Response sau khi thiết bị xác thực thành công."""
+
+    access_token: str
+    token_type: str = "bearer"
+    created_at: datetime
+
+
 class DeviceUpdateRequest(BaseModel):
     """Body cập nhật thiết bị (vô hiệu hóa/kích hoạt)."""
 

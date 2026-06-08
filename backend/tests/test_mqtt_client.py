@@ -10,12 +10,18 @@ from app.mqtt.client import (
     stop_mqtt,
 )
 from app.config import settings
+from app.services.auth_service import create_device_token
 
 
 @pytest.fixture
 def mock_mqtt_client():
     client = MagicMock()
     return client
+
+
+@pytest.fixture
+def valid_device_token():
+    return create_device_token("TEST_PLANT")
 
 
 def test_on_connect(mock_mqtt_client):
@@ -29,8 +35,10 @@ def test_on_disconnect(mock_mqtt_client):
 
 
 @pytest.mark.asyncio
-async def test_on_message_success():
-    payload = json.dumps({"sensors": [{"key": "light", "value": 100}]}).encode("utf-8")
+async def test_on_message_success(valid_device_token):
+    payload = json.dumps(
+        {"token": valid_device_token, "sensors": [{"key": "light", "value": 100}]}
+    ).encode("utf-8")
 
     with patch(
         "app.mqtt.client.process_telemetry", new_callable=AsyncMock
@@ -47,14 +55,47 @@ async def test_on_message_success():
 
 
 @pytest.mark.asyncio
-async def test_on_message_invalid_topic():
+async def test_on_message_invalid_topic(valid_device_token):
     # Should ignore quietly
     await on_message(None, "invalid/topic", b"{}", 0, None)
 
 
 @pytest.mark.asyncio
-async def test_on_message_empty_sensors():
-    payload = json.dumps({"sensors": []}).encode("utf-8")
+async def test_on_message_missing_token():
+    payload = json.dumps({"sensors": [{"key": "light", "value": 100}]}).encode("utf-8")
+    with patch(
+        "app.mqtt.client.process_telemetry", new_callable=AsyncMock
+    ) as mock_process:
+        await on_message(None, "devices/TEST_PLANT/telemetry", payload, 0, None)
+        assert not mock_process.called
+
+
+@pytest.mark.asyncio
+async def test_on_message_invalid_token():
+    payload = json.dumps({
+        "token": "invalid_jwt_token",
+        "sensors": [{"key": "light", "value": 100}]
+    }).encode("utf-8")
+    with patch("app.mqtt.client.process_telemetry", new_callable=AsyncMock) as mock_process:
+        await on_message(None, "devices/TEST_PLANT/telemetry", payload, 0, None)
+        assert not mock_process.called
+
+
+@pytest.mark.asyncio
+async def test_on_message_wrong_plant_token():
+    wrong_token = create_device_token("OTHER_PLANT")
+    payload = json.dumps({
+        "token": wrong_token,
+        "sensors": [{"key": "light", "value": 100}]
+    }).encode("utf-8")
+    with patch("app.mqtt.client.process_telemetry", new_callable=AsyncMock) as mock_process:
+        await on_message(None, "devices/TEST_PLANT/telemetry", payload, 0, None)
+        assert not mock_process.called
+
+
+@pytest.mark.asyncio
+async def test_on_message_empty_sensors(valid_device_token):
+    payload = json.dumps({"token": valid_device_token, "sensors": []}).encode("utf-8")
     await on_message(None, "devices/TEST_PLANT/telemetry", payload, 0, None)
 
 
@@ -64,8 +105,10 @@ async def test_on_message_invalid_json():
 
 
 @pytest.mark.asyncio
-async def test_on_message_process_value_error():
-    payload = json.dumps({"sensors": [{"key": "light", "value": 100}]}).encode("utf-8")
+async def test_on_message_process_value_error(valid_device_token):
+    payload = json.dumps(
+        {"token": valid_device_token, "sensors": [{"key": "light", "value": 100}]}
+    ).encode("utf-8")
 
     with patch(
         "app.mqtt.client.process_telemetry", new_callable=AsyncMock
@@ -80,8 +123,10 @@ async def test_on_message_process_value_error():
 
 
 @pytest.mark.asyncio
-async def test_on_message_process_exception():
-    payload = json.dumps({"sensors": [{"key": "light", "value": 100}]}).encode("utf-8")
+async def test_on_message_process_exception(valid_device_token):
+    payload = json.dumps(
+        {"token": valid_device_token, "sensors": [{"key": "light", "value": 100}]}
+    ).encode("utf-8")
 
     with patch(
         "app.mqtt.client.process_telemetry", new_callable=AsyncMock

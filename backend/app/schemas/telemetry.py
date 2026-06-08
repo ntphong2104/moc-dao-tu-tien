@@ -14,8 +14,10 @@ class TelemetryPayload(BaseModel):
     """Payload telemetry từ thiết bị.
 
     Thiết bị gửi danh sách các cảm biến mỗi chu kỳ (60s).
+    Yêu cầu phải có token xác thực.
     """
 
+    token: str
     sensors: list[SensorData]
 
 

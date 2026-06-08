@@ -9,7 +9,7 @@ from sqlalchemy.orm import selectinload
 
 from app.database import get_db
 from app.models.plant import Plant
-from app.schemas.leaderboard import LeaderboardResponse
+from app.schemas.leaderboard import LeaderboardResponse, LeaderboardEntry
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/leaderboard", tags=["Leaderboard"])
@@ -45,18 +45,14 @@ async def get_leaderboard(
     entries = []
     for i, plant in enumerate(plants, 1):
         entries.append(
-            {
-                "rank": i,
-                "plant_name": plant.name,
-                "owner_display_name": plant.user.display_name
-                if plant.user
-                else "Unknown",
-                "total_exp": plant.total_exp,
-                "rank_name": plant.current_rank.name
-                if plant.current_rank
-                else "Phàm Mộc",
-                "plant_id": str(plant.id),
-            }
+            LeaderboardEntry(
+                rank=i,
+                plant_name=plant.name,
+                owner_display_name=plant.user.display_name if plant.user else "Unknown",
+                total_exp=plant.total_exp,
+                rank_name=plant.current_rank.name if plant.current_rank else "Phàm Mộc",
+                plant_id=plant.id,
+            )
         )
 
     return LeaderboardResponse(
