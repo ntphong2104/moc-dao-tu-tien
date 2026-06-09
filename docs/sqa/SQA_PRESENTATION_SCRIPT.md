@@ -129,3 +129,14 @@ Con số 100% Branch Coverage chứng minh rằng toàn bộ 170 kịch bản r�
 
 **5. Thầy hỏi: "Lỗi Broken Access Control ở UC-06 là gì?"**
 *   **Trả lời:** *"Dạ là lỗ hổng khi hệ thống quên không kiểm tra quyền của người dùng (vd: quên check `role == admin`). Người dùng A có thể dùng API thao tác sửa dữ liệu của Admin. Đây là lỗ hổng bảo mật phổ biến nhất thế giới, nằm Top 1 của bảng xếp hạng **OWASP Top 10** ạ."*
+
+**6. Thầy hỏi (Nghiệp vụ UC-07): "Tại sao hệ thống của em không cho người dùng tự tạo Mật khẩu mà lại bắt buộc dùng Google OAuth?"**
+*   **Trả lời:** *"Dạ thưa thầy, quyết định này dựa trên 2 yếu tố nghiệp vụ. Thứ nhất, hệ thống IoT của tụi em cần gửi cảnh báo khẩn cấp khi cây sắp chết, việc dùng Google OAuth đảm bảo **100% email là email thật và đang hoạt động**, tụi em không tốn chi phí làm luồng 'Gửi mã xác thực email'. Thứ hai, nó tuân thủ triết lý **Passwordless (Không mật khẩu)**, bảo vệ người dùng tuyệt đối khỏi rủi ro bị lộ lọt mật khẩu do thói quen đặt pass dễ đoán ạ."*
+
+**7. Thầy hỏi (Nghiệp vụ UC-07): "Tại sao lại dùng JWT thay vì dùng Session lưu trên Database? Nhược điểm của JWT là gì?"**
+*   **Trả lời:** *"Dạ thưa thầy, vì đây là hệ thống IoT có lượng Request rất lớn (thiết bị bắn dữ liệu liên tục mỗi giây). JWT có tính chất **Stateless (Phi trạng thái)**, Backend chỉ cần dùng thuật toán giải mã là nhận diện được User, giúp hệ thống không bị quá tải do phải truy vấn Database liên tục.
+Tuy nhiên nhược điểm là khó thu hồi Token (Revoke) ngay lập tức khi phát hiện tài khoản bị hack. Để khắc phục, tụi em thiết kế thời gian sống (`exp`) của Access Token rất ngắn (chỉ 30 phút) để giới hạn rủi ro ạ."*
+
+**8. Thầy hỏi (Nghiệp vụ UC-06): "Admin có những quyền gì nguy hiểm nhất trong hệ thống này? Nếu Admin vô hiệu hóa một thiết bị IoT đang chạy thì dữ liệu cũ có mất không?"**
+*   **Trả lời:** *"Dạ thưa thầy, quyền nguy hiểm nhất của Admin là quản lý cấp phát **Thiết bị (Provisioning)** và chỉnh sửa **Cấu hình Game (EXP/Rank Config)**. 
+Về nghiệp vụ vô hiệu hóa: Tụi em thiết kế theo cơ chế **Soft Disable (Khóa mềm)**. Tức là nếu Admin vô hiệu hóa một cái máy đo ESP32 (`is_active = False`), thì Backend sẽ chặn đứng (Từ chối) toàn bộ gói tin Telemetry bắn lên từ máy đó. Nhưng **TUYỆT ĐỐI không xóa dữ liệu lịch sử** của chậu cây trong Database, điều này giúp bảo toàn tính toàn vẹn dữ liệu (Data Integrity) trong quá khứ ạ."*
