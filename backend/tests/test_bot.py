@@ -161,11 +161,12 @@ def generate_payload(plant_type="KIM_TIEN", condition="excellent"):
 
 
 async def run_rest_simulator(
-    url, plant_code, plant_type, condition, interval, duration
+    url, plant_code, verify_code, plant_type, condition, interval, duration
 ):
     """Giả lập thiết bị gửi dữ liệu qua REST API fallback."""
-    headers = {"X-Plant-Code": plant_code, "Content-Type": "application/json"}
+    headers = {"Content-Type": "application/json"}
     endpoint = f"{url.rstrip('/')}/api/devices/{plant_code}/telemetry"
+    auth_endpoint = f"{url.rstrip('/')}/api/devices/{plant_code}/auth"
 
     print(f"{BLUE}[REST SIMULATOR]{RESET} Khởi động thành công!")
     print(f"👉 Endpoint: {endpoint}")
@@ -176,6 +177,34 @@ async def run_rest_simulator(
     print("--------------------------------------------------\n")
 
     client = httpx.AsyncClient(timeout=10.0)
+
+    # 1. Xin cấp JWT Token trước khi gửi Telemetry
+    print(
+        f"[{datetime.now().strftime('%H:%M:%S')}] 🔐 Đang xin cấp JWT Token từ Server..."
+    )
+    try:
+        auth_res = await client.post(auth_endpoint, json={"verify_code": verify_code})
+        if auth_res.status_code == 200:
+            token = auth_res.json()["access_token"]
+            print(
+                f"✅ {GREEN}Đã nhận Token thành công: {token[:10]}...{token[-10:]}{RESET}\n"
+            )
+        else:
+            print(
+                f"❌ {RED}Lỗi xác thực (HTTP {auth_res.status_code}): {auth_res.text}{RESET}"
+            )
+            print("💡 Kiểm tra lại verify_code của thiết bị!\n")
+            await client.aclose()
+            return
+    except httpx.RequestError as e:
+        print(f"❌ {RED}Không kết nối được tới Backend Server: {e}{RESET}\n")
+        print(
+            f"💡 {CYAN}Server Backend có vẻ CHƯA BẬT. Hãy mở Terminal khác và chạy lệnh:{RESET}"
+        )
+        print(f"   {BOLD}uv run fastapi dev main.py{RESET}\n")
+        await client.aclose()
+        return
+
     start_time = time.time()
     count = 0
 
@@ -190,6 +219,7 @@ async def run_rest_simulator(
 
             count += 1
             payload = generate_payload(plant_type, condition)
+            payload["token"] = token
             timestamp = datetime.now().strftime("%H:%M:%S")
 
             print(f"[{timestamp}] 📡 Đang gửi Telemetry lần #{count}...")
@@ -218,9 +248,22 @@ async def run_rest_simulator(
                         f"✨ {GREEN}Kết quả từ Server: {BOLD}HTTP {response.status_code}{RESET}"
                     )
                     print(f"   └ Trạng thái: {BOLD}{status_text.upper()}{RESET}")
-                    print(
-                        f"   └ Nhận EXP kỳ này: {BOLD}{GREEN if exp_awarded else RED}{exp_awarded}{RESET}"
-                    )
+
+                    # Cập nhật hiển thị cho hợp logic Background Job
+                    if exp_awarded:
+                        print(f"   └ Nhận EXP kỳ này: {BOLD}{GREEN}True{RESET}")
+                    else:
+                        print(
+                            f"   └ Nhận EXP kỳ này: {BOLD}{YELLOW}Đang chờ Background Job xử lý (mỗi 1 phút){RESET}"
+                        )
+
+                    current_rank = res_data.get("current_rank")
+                    total_exp = res_data.get("total_exp")
+                    if current_rank is not None:
+                        print(
+                            f"   └ Cảnh giới hiện tại: {BOLD}{CYAN}{current_rank}{RESET} ({total_exp} Tu Vi)"
+                        )
+
                     print(f"   └ Thông điệp: {color}{msg}{RESET}\n")
 
                 elif response.status_code == 403:
@@ -249,6 +292,11 @@ async def run_rest_simulator(
 
             except httpx.RequestError as e:
                 print(f"❌ {RED}Không kết nối được tới Backend Server: {e}{RESET}\n")
+                print(
+                    f"💡 {CYAN}Server Backend có vẻ CHƯA BẬT. Hãy mở Terminal khác và chạy lệnh:{RESET}"
+                )
+                print(f"   {BOLD}uv run fastapi dev main.py{RESET}\n")
+                break
 
             await asyncio.sleep(interval)
 
@@ -257,11 +305,13 @@ async def run_rest_simulator(
 
 
 async def run_mqtt_simulator(
+    url,  # Thêm url để lấy token qua HTTP
     broker_host,
     broker_port,
     username,
     password,
     plant_code,
+    verify_code,
     plant_type,
     condition,
     interval,
@@ -278,6 +328,33 @@ async def run_mqtt_simulator(
         return
 
     topic = f"devices/{plant_code}/telemetry"
+
+    # Xin cấp token qua HTTP trước
+    auth_endpoint = f"{url.rstrip('/')}/api/devices/{plant_code}/auth"
+    print(
+        f"[{datetime.now().strftime('%H:%M:%S')}] 🔐 Đang xin cấp JWT Token từ Server qua HTTP..."
+    )
+    async with httpx.AsyncClient(timeout=10.0) as http_client:
+        try:
+            auth_res = await http_client.post(
+                auth_endpoint, json={"verify_code": verify_code}
+            )
+            if auth_res.status_code == 200:
+                token = auth_res.json()["access_token"]
+                print(
+                    f"✅ {GREEN}Đã nhận Token thành công: {token[:10]}...{token[-10:]}{RESET}\n"
+                )
+            else:
+                print(
+                    f"❌ {RED}Lỗi xác thực (HTTP {auth_res.status_code}): {auth_res.text}{RESET}"
+                )
+                return
+        except httpx.RequestError as e:
+            print(f"❌ {RED}Không kết nối được tới HTTP Server: {e}{RESET}")
+            print(
+                f"💡 {CYAN}Cần bật Backend Server để lấy Token (mở Terminal khác chạy `uv run fastapi dev main.py`){RESET}\n"
+            )
+            return
 
     print(
         f"{BLUE}[MQTT SIMULATOR]{RESET} Đang kết nối tới broker {broker_host}:{broker_port}..."
@@ -329,6 +406,7 @@ async def run_mqtt_simulator(
 
             count += 1
             payload = generate_payload(plant_type, condition)
+            payload["token"] = token
             payload_str = json.dumps(payload)
             timestamp = datetime.now().strftime("%H:%M:%S")
 
@@ -358,6 +436,12 @@ def main():
         type=str,
         required=True,
         help="Plant Code của thiết bị (ví dụ: ABC123XY)",
+    )
+    parser.add_argument(
+        "--verify-code",
+        type=str,
+        default="123456",
+        help="Verify Code của thiết bị (ví dụ: 123456)",
     )
     parser.add_argument(
         "--type",
@@ -441,6 +525,7 @@ def main():
                 run_rest_simulator(
                     url=args.url,
                     plant_code=args.code.upper(),
+                    verify_code=args.verify_code,
                     plant_type=args.type,
                     condition=args.condition,
                     interval=args.interval,
@@ -450,11 +535,13 @@ def main():
         else:
             asyncio.run(
                 run_mqtt_simulator(
+                    url=args.url,
                     broker_host=args.host,
                     broker_port=args.port,
                     username=args.username,
                     password=args.password,
                     plant_code=args.code.upper(),
+                    verify_code=args.verify_code,
                     plant_type=args.type,
                     condition=args.condition,
                     interval=args.interval,

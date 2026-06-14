@@ -40,6 +40,9 @@ async def test_pair_plant_success(mock_db, mock_user):
     plant_type = PlantType(id=uuid4(), name="Xương Rồng")
     rank = RankConfig(id=uuid4(), order=1, name="Phàm Mộc")
 
+    mock_result_no_plant = MagicMock()
+    mock_result_no_plant.scalar_one_or_none.return_value = None
+
     mock_result_device = MagicMock()
     mock_result_device.scalar_one_or_none.return_value = device
 
@@ -49,7 +52,12 @@ async def test_pair_plant_success(mock_db, mock_user):
     mock_result_rank = MagicMock()
     mock_result_rank.scalar_one_or_none.return_value = rank
 
-    mock_db.execute.side_effect = [mock_result_device, mock_result_pt, mock_result_rank]
+    mock_db.execute.side_effect = [
+        mock_result_no_plant,
+        mock_result_device,
+        mock_result_pt,
+        mock_result_rank,
+    ]
 
     with patch("bcrypt.checkpw", return_value=True):
         plant = await pair_plant(
@@ -61,6 +69,17 @@ async def test_pair_plant_success(mock_db, mock_user):
     assert device.is_paired is True
     assert mock_db.add.called
     assert mock_db.flush.called
+
+
+@pytest.mark.asyncio
+async def test_pair_plant_already_has_plant(mock_db, mock_user):
+    existing_plant = Plant(id=uuid4(), name="My Plant")
+    mock_result_has_plant = MagicMock()
+    mock_result_has_plant.scalar_one_or_none.return_value = existing_plant
+    mock_db.execute.return_value = mock_result_has_plant
+
+    with pytest.raises(ValueError, match="Mỗi tài khoản chỉ được liên kết 1 chậu cây"):
+        await pair_plant(mock_db, mock_user, "ABCDEFGH", "123456", "Name", uuid4())
 
 
 @pytest.mark.asyncio
@@ -76,9 +95,11 @@ async def test_pair_plant_invalid_code(mock_db, mock_user):
 @pytest.mark.asyncio
 async def test_pair_plant_inactive_device(mock_db, mock_user):
     device = Device(id=uuid4(), is_active=False)
-    mock_result = MagicMock()
-    mock_result.scalar_one_or_none.return_value = device
-    mock_db.execute.return_value = mock_result
+    mock_result_no_plant = MagicMock()
+    mock_result_no_plant.scalar_one_or_none.return_value = None
+    mock_result_device = MagicMock()
+    mock_result_device.scalar_one_or_none.return_value = device
+    mock_db.execute.side_effect = [mock_result_no_plant, mock_result_device]
 
     with pytest.raises(ValueError, match="Thiết bị đã bị vô hiệu hóa"):
         await pair_plant(mock_db, mock_user, "ABCDEFGH", "123456", "Name", uuid4())
@@ -87,9 +108,11 @@ async def test_pair_plant_inactive_device(mock_db, mock_user):
 @pytest.mark.asyncio
 async def test_pair_plant_already_paired(mock_db, mock_user):
     device = Device(id=uuid4(), is_active=True, is_paired=True)
-    mock_result = MagicMock()
-    mock_result.scalar_one_or_none.return_value = device
-    mock_db.execute.return_value = mock_result
+    mock_result_no_plant = MagicMock()
+    mock_result_no_plant.scalar_one_or_none.return_value = None
+    mock_result_device = MagicMock()
+    mock_result_device.scalar_one_or_none.return_value = device
+    mock_db.execute.side_effect = [mock_result_no_plant, mock_result_device]
 
     with pytest.raises(
         ValueError, match="Thiết bị đã được liên kết với tài khoản khác"
@@ -100,9 +123,11 @@ async def test_pair_plant_already_paired(mock_db, mock_user):
 @pytest.mark.asyncio
 async def test_pair_plant_wrong_verify_code(mock_db, mock_user):
     device = Device(id=uuid4(), is_active=True, is_paired=False, verify_hash="hash")
-    mock_result = MagicMock()
-    mock_result.scalar_one_or_none.return_value = device
-    mock_db.execute.return_value = mock_result
+    mock_result_no_plant = MagicMock()
+    mock_result_no_plant.scalar_one_or_none.return_value = None
+    mock_result_device = MagicMock()
+    mock_result_device.scalar_one_or_none.return_value = device
+    mock_db.execute.side_effect = [mock_result_no_plant, mock_result_device]
 
     with patch("bcrypt.checkpw", return_value=False):
         with pytest.raises(ValueError, match="Verify Code không chính xác"):
@@ -112,13 +137,20 @@ async def test_pair_plant_wrong_verify_code(mock_db, mock_user):
 @pytest.mark.asyncio
 async def test_pair_plant_missing_type(mock_db, mock_user):
     device = Device(id=uuid4(), is_active=True, is_paired=False, verify_hash="hash")
+    mock_result_no_plant = MagicMock()
+    mock_result_no_plant.scalar_one_or_none.return_value = None
+
     mock_result_device = MagicMock()
     mock_result_device.scalar_one_or_none.return_value = device
 
     mock_result_pt = MagicMock()
     mock_result_pt.scalar_one_or_none.return_value = None
 
-    mock_db.execute.side_effect = [mock_result_device, mock_result_pt]
+    mock_db.execute.side_effect = [
+        mock_result_no_plant,
+        mock_result_device,
+        mock_result_pt,
+    ]
 
     with patch("bcrypt.checkpw", return_value=True):
         with pytest.raises(ValueError, match="Loại cây không tồn tại"):
@@ -128,6 +160,9 @@ async def test_pair_plant_missing_type(mock_db, mock_user):
 @pytest.mark.asyncio
 async def test_pair_plant_missing_rank(mock_db, mock_user):
     device = Device(id=uuid4(), is_active=True, is_paired=False, verify_hash="hash")
+    mock_result_no_plant = MagicMock()
+    mock_result_no_plant.scalar_one_or_none.return_value = None
+
     mock_result_device = MagicMock()
     mock_result_device.scalar_one_or_none.return_value = device
 
@@ -137,7 +172,12 @@ async def test_pair_plant_missing_rank(mock_db, mock_user):
     mock_result_rank = MagicMock()
     mock_result_rank.scalar_one_or_none.return_value = None
 
-    mock_db.execute.side_effect = [mock_result_device, mock_result_pt, mock_result_rank]
+    mock_db.execute.side_effect = [
+        mock_result_no_plant,
+        mock_result_device,
+        mock_result_pt,
+        mock_result_rank,
+    ]
 
     with patch("bcrypt.checkpw", return_value=True):
         with pytest.raises(ValueError, match="Chưa có cấu hình Cảnh Giới"):

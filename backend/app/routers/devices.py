@@ -83,6 +83,8 @@ async def receive_telemetry(
             status=result["status"],
             exp_awarded=result["exp_awarded"],
             message=result.get("message"),
+            current_rank=result.get("current_rank"),
+            total_exp=result.get("total_exp"),
         )
     except ValueError as e:
         raise HTTPException(

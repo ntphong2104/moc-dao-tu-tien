@@ -27,3 +27,5 @@ class TelemetryResponse(BaseModel):
     status: str = "ok"
     exp_awarded: bool
     message: str | None = None
+    current_rank: str | None = None
+    total_exp: float | None = None
